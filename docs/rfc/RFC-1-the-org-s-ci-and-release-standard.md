@@ -71,8 +71,9 @@ reusable workflow reports as `<caller job> / <called job>`, so a reusable `ci` w
 required check.
 
 **R2. Triggers and concurrency.** `ci.yml` runs on `pull_request` with types
-`[opened, synchronize, reopened, labeled, unlabeled]`, `merge_group`, and `push` to `main`. No
-`workflow_dispatch`, no `edited`, no workflow-level `branches:` or `paths:` filter. Concurrency group
+`[opened, synchronize, reopened, labeled, unlabeled]`, `merge_group`, and `push` with
+`branches: [main]`. No `workflow_dispatch`, no `edited`, and no `branches:` or `paths:` filter on
+`pull_request` or `merge_group`. Concurrency group
 `ci-${{ github.workflow }}-${{ github.ref }}` with
 `cancel-in-progress: ${{ github.event_name == 'pull_request' && github.event.action == 'synchronize' }}`.
 *Evidence:* urzua BUG-222, BUG-223, BUG-15 (label events), garita RFC-4 §1; urzua `ci.yml` header on
@@ -124,7 +125,8 @@ amendment (attestation is blocking); garita RFC-4 §2 and §5, and garita's `pub
 
 **R9. Branch protection.** A ruleset on the default branch: pull request required (0 approvals for a
 sole maintainer), `ci` required (GitHub Actions source), force pushes and deletion blocked, no bypass
-actor. No rule on the `release` branch or on tags that `publish-release` pushes. *Evidence:* urzua
+actor. No rule on the `release` branch. A tag ruleset on `v*` may block update and deletion but
+never creation, which `publish-release` needs to push its tag. *Evidence:* urzua
 ADR-95 §4; the live rulesets on urzua (`release`) and garita (`main`) match this. *How:* **stated**; a
 repository setting the maintainer applies (§5).
 
@@ -287,4 +289,5 @@ Each unit lands with its tests and is adopted by one project before the next sta
 >
 > | Date | Change | Class |
 > |---|---|---|
-> | 2026-11-25 | `Status` set to `Accepted`. **Why:** the maintainer accepted the record. Their words, relayed from the URZUAHQ thread: "in terms of the platform PR 1, that is acceptable. Let's go merge that in and get started with the next steps." No row of §6 was marked, so its recommendations stand. Open questions 2 to 6 are accepted as recommended: hand-cut tags until `publish-release.yml` exists; Renovate org-wide; one release App per repository; agent-cli-kit keeps hand-cut tags and skips R6–R8; urzua moves to edition 2024 after its `v1.1.0` work, in its own pull request. | **substantive** |
+> | 2026-11-25 | R2 states that `push` carries `branches: [main]` and the banned filters are those on `pull_request` and `merge_group`; R9 states that a tag ruleset blocks update and deletion but never creation, as §3 and §5 already do. **Why:** review found each rule could be read against another part of this record; neither changes what a project must do. | **structural** |
+| 2026-11-25 | `Status` set to `Accepted`. **Why:** the maintainer accepted the record. Their words, relayed from the URZUAHQ thread: "in terms of the platform PR 1, that is acceptable. Let's go merge that in and get started with the next steps." No row of §6 was marked, so its recommendations stand. Open questions 2 to 6 are accepted as recommended: hand-cut tags until `publish-release.yml` exists; Renovate org-wide; one release App per repository; agent-cli-kit keeps hand-cut tags and skips R6–R8; urzua moves to edition 2024 after its `v1.1.0` work, in its own pull request. | **substantive** |
