@@ -1,6 +1,6 @@
 ---
 Stable-Id: 01M864XDQ0WW6FX6T2BRJ9Q1BW
-Status: Draft
+Status: Accepted
 Date: 2026-11-24
 Author: beauwilliams
 ---
@@ -282,3 +282,9 @@ Each unit lands with its tests and is adopted by one project before the next sta
 - Moving `urzua-gate` out of urzua.
 - Deciding package registries (crates.io, npm); garita RFC-4 §5 defers that to an org decision.
 - A release cadence.
+
+> **Revision log**
+>
+> | Date | Change | Class |
+> |---|---|---|
+> | 2026-11-25 | `Status` set to `Accepted`. **Why:** the maintainer accepted the record. Their words, relayed from the URZUAHQ thread: "in terms of the platform PR 1, that is acceptable. Let's go merge that in and get started with the next steps." No row of §6 was marked, so its recommendations stand. Open questions 2 to 6 are accepted as recommended: hand-cut tags until `publish-release.yml` exists; Renovate org-wide; one release App per repository; agent-cli-kit keeps hand-cut tags and skips R6–R8; urzua moves to edition 2024 after its `v1.1.0` work, in its own pull request. | **substantive** |
