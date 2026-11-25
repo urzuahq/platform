@@ -24,7 +24,19 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
+      - run: ci/scripts/install-pyyaml.sh "$RUNNER_TEMP/venv"
       - run: make ci
+        env:
+          PYTHON: ${{ runner.temp }}/venv/bin/python
+
+  workflow-lint:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: ./ci/actions/workflow-lint
 
   records:
     runs-on: ubuntu-latest
@@ -37,15 +49,15 @@ jobs:
         with:
           fetch-depth: 0
           persist-credentials: false
-      - uses: urzuahq/urzua/.github/actions/urzua-gate@e52818ccf9ea03035ca7858d547c9df36ee6bfff # v0.4.14
+      - uses: urzuahq/urzua/.github/actions/urzua-gate@c72d0082896e602699f0b4e2ade3c78e1e039551 # v0.4.15
         with:
-          version: v0.4.14
+          version: v0.4.15
           base-ref: ${{ github.base_ref }}
 
   # The one required check (RFC-1 R1), run through the action callers use.
   ci:
     name: ci
-    needs: [scripts, records]
+    needs: [scripts, workflow-lint, records]
     if: always()
     runs-on: ubuntu-latest
     timeout-minutes: 2
