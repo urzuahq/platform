@@ -1,0 +1,59 @@
+name: ci
+
+# Triggers and concurrency follow RFC-1 R2.
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, labeled, unlabeled]
+  merge_group:
+  push:
+    branches: [main]
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' && github.event.action == 'synchronize' }}
+
+permissions:
+  contents: read
+
+jobs:
+  scripts:
+    name: scripts (shellcheck, planted-violation tests)
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - run: make ci
+
+  records:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: urzuahq/urzua/.github/actions/urzua-gate@e52818ccf9ea03035ca7858d547c9df36ee6bfff # v0.4.14
+        with:
+          version: v0.4.14
+          base-ref: ${{ github.base_ref }}
+
+  # The one required check (RFC-1 R1), run through the action callers use.
+  ci:
+    name: ci
+    needs: [scripts, records]
+    if: always()
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          sparse-checkout: ci
+      - uses: ./ci/actions/ci-gate
+        with:
+          needs: ${{ toJSON(needs) }}

@@ -1,0 +1,27 @@
+name: ci gate
+description: >-
+  The verdict of a repository's one required check: fails unless every job the
+  gate job needs succeeded. A failure, a cancellation, a skip and a missing
+  result are all red, except skips of the jobs named in allow-skipped.
+
+inputs:
+  needs:
+    description: The gate job's `toJSON(needs)`.
+    required: true
+  allow-skipped:
+    description: >-
+      Comma-separated job ids that may be skipped, for jobs that exist only on
+      some events (such as a changeset job off pull requests).
+    required: false
+    default: ""
+
+runs:
+  using: composite
+  steps:
+    - name: fail unless every needed job succeeded
+      shell: bash
+      env:
+        NEEDS: ${{ inputs.needs }}
+        ALLOW_SKIPPED: ${{ inputs.allow-skipped }}
+        GATE: ${{ github.action_path }}/../../scripts/ci-gate.sh
+      run: '"$GATE" --allow-skipped "$ALLOW_SKIPPED"'
