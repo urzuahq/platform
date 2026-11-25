@@ -1,0 +1,50 @@
+schema_version: 2
+record_types:
+  rfc:
+    dir: docs/rfc
+    required_fields: [Stable-Id, Status, Date, Author]
+    header_shape: yaml-frontmatter
+    prefix: RFC
+    statuses:
+      values: [Draft, Discussion, Accepted, Rejected, Superseded]
+      initial: [Draft]
+      success: [Accepted]
+      failure: [Rejected, Superseded]
+      progress: [Discussion]
+      transitions:
+        Draft: [Discussion, Accepted, Rejected]
+        Discussion: [Draft, Accepted, Rejected]
+        Accepted: [Superseded]
+        Rejected: [Draft]
+    sections:
+      from: headings
+      depth: 2
+      required:
+        - {name: Summary}
+        - {name: Motivation}
+        - {name: Proposal}
+rules:
+  header.required-fields: error
+  status.undeclared-value: error
+  status.transition-allowed: error
+  section.required: error
+  filename.title-consistency: warn
+  header.case-variant-key: warn
+  type.dir-matches-nothing: warn
+  identity.collision: warn
+  identity.open-pr-collision: warn
+  type.record-outside-declared-dir: warn
+  config.companion-declaration-missing: warn
+  config.pointer-declaration-missing: warn
+  config.pointer-field-not-known: warn
+  config.pointer-narrative-overlap: warn
+  config.header-none-has-no-required-fields: warn
+  config.relation-field-not-known: warn
+  config.schema-version-outdated: warn
+  filename.identity-pattern: warn
+  config.scope-matches-nothing: warn
+authority:
+  decider_table: base
+  waivable: never
+harness:
+  outside_writes: shared
