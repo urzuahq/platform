@@ -38,6 +38,24 @@ jobs:
           persist-credentials: false
       - uses: ./ci/actions/workflow-lint
 
+  # The released actions, called the way a project calls them: by repository
+  # path at a tag's SHA, so a remote caller's resolution of each action's
+  # scripts is exercised, over the caller template.
+  tagged-actions:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          sparse-checkout: ci/templates
+      - uses: urzuahq/platform/ci/actions/workflow-lint@df7f9823006d6d9a6244c869bb03dc3c6c4136a4 # v0.2.0
+        with:
+          working-directory: ci/templates/default
+      - uses: urzuahq/platform/ci/actions/ci-gate@df7f9823006d6d9a6244c869bb03dc3c6c4136a4 # v0.2.0
+        with:
+          needs: '{"checks":{"result":"success"},"workflow-lint":{"result":"success"}}'
+
   records:
     runs-on: ubuntu-latest
     timeout-minutes: 10
@@ -57,7 +75,7 @@ jobs:
   # The one required check (RFC-1 R1), run through the action callers use.
   ci:
     name: ci
-    needs: [scripts, workflow-lint, records]
+    needs: [scripts, workflow-lint, tagged-actions, records]
     if: always()
     runs-on: ubuntu-latest
     timeout-minutes: 2
