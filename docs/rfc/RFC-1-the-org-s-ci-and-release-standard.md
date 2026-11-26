@@ -78,7 +78,7 @@ required check.
 `cancel-in-progress: ${{ github.event_name == 'pull_request' && github.event.action == 'synchronize' }}`.
 *Evidence:* urzua BUG-222, BUG-223, BUG-15 (label events), garita RFC-4 §1; urzua `ci.yml` header on
 why a filtered required check deadlocks a merge. *How:* **stated** (triggers and concurrency belong to
-the calling workflow), and checked by the **shared** `workflow-lint` job.
+the calling workflow), and checked by the **shared** `workflow-lint` action.
 
 **R3. One definition of the checks, run by CI and by the release.** A project's checks live in a
 `workflow_call` workflow (`checks.yml`) that `ci.yml` calls and the publish workflow calls again on the
@@ -251,7 +251,7 @@ Each unit lands with its tests and is adopted by one project before the next sta
 | # | Unit | Kind | First adopter | Risk |
 |---|---|---|---|---|
 | 1 | This repo's `ci.yml`: records gate, `ci-gate`, script tests; then the rulesets (§5) and tag `v0.1.0` | workflow, action | platform | low |
-| 2 | `workflow-lint`: R2, R4, R5 and §3 over a caller's workflow files | reusable workflow | decision-agent-kit (fixes its BUG-222/223 class) | low |
+| 2 | `workflow-lint`: R1, R2, R4 and R5 over a caller's workflow files | action | decision-agent-kit (fixes its BUG-222/223 class) | low |
 | 3 | `ci-gate` for callers | action | agent-cli-kit (has no aggregate gate) | low |
 | 4 | `install-knope`, `install-nextest`, `install-cargo-tools` with pin tests | actions | garita | medium |
 | 5 | `agent-cli-contract.yml` | reusable workflow | garita, then urzua (its open contract fix) | medium |
@@ -291,3 +291,4 @@ Each unit lands with its tests and is adopted by one project before the next sta
 > |---|---|---|
 > | 2026-11-25 | R2 states that `push` carries `branches: [main]` and the banned filters are those on `pull_request` and `merge_group`; R9 states that a tag ruleset blocks update and deletion but never creation, as §3 and §5 already do. **Why:** review found each rule could be read against another part of this record; neither changes what a project must do. | **structural** |
 | 2026-11-25 | `Status` set to `Accepted`. **Why:** the maintainer accepted the record. Their words, relayed from the URZUAHQ thread: "in terms of the platform PR 1, that is acceptable. Let's go merge that in and get started with the next steps." No row of §6 was marked, so its recommendations stand. Open questions 2 to 6 are accepted as recommended: hand-cut tags until `publish-release.yml` exists; Renovate org-wide; one release App per repository; agent-cli-kit keeps hand-cut tags and skips R6–R8; urzua moves to edition 2024 after its `v1.1.0` work, in its own pull request. | **substantive** |
+> | 2026-11-25 | Build step 2's `workflow-lint` is a composite action, not a reusable workflow, and checks R1 as well. **Why:** an action finds its own script through `github.action_path`, while a reusable workflow would have to pin this repository's SHA from inside the commit that creates it (§3). The rules it checks are unchanged. | **structural** |
