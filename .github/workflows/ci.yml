@@ -72,10 +72,31 @@ jobs:
           version: v0.4.15
           base-ref: ${{ github.base_ref }}
 
+  installers:
+    name: installers (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: ./ci/actions/install-knope
+      - uses: ./ci/actions/install-nextest
+      - uses: ./ci/actions/install-cargo-tools
+      - run: |
+          knope --version
+          cargo-nextest nextest --version
+          cargo-deny --version
+          cargo-machete --version
+
   # The one required check (RFC-1 R1), run through the action callers use.
   ci:
     name: ci
-    needs: [scripts, workflow-lint, tagged-actions, records]
+    needs: [scripts, workflow-lint, tagged-actions, records, installers]
     if: always()
     runs-on: ubuntu-latest
     timeout-minutes: 2
