@@ -101,10 +101,28 @@ jobs:
           cargo-deny --version
           cargo-machete --version
 
+  # The pin check over the network, against the kit's v1.1.0 as a tool vendors
+  # it. The conformance runner needs a built tool and runs in the adopters.
+  contract-pin:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: urzuahq/agent-cli-kit
+          ref: v1.1.0
+          path: kit-v1.1.0
+          persist-credentials: false
+      - run: echo "v1.1.0 9e35d452b65d7c0108a2a7374662531dc2bbc66f" > "$RUNNER_TEMP/VERSION"
+      - run: ci/scripts/contract-pin.sh kit-v1.1.0/schemas "$RUNNER_TEMP/VERSION" "$RUNNER_TEMP/kit"
+
   # The one required check (RFC-1 R1), run through the action callers use.
   ci:
     name: ci
-    needs: [scripts, workflow-lint, tagged-actions, records, installers]
+    needs: [scripts, workflow-lint, tagged-actions, records, installers, contract-pin]
     if: always()
     runs-on: ubuntu-latest
     timeout-minutes: 2

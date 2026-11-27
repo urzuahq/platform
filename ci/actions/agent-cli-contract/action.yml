@@ -1,0 +1,62 @@
+name: agent CLI contract
+description: >-
+  Checks a tool that implements the agent CLI contract (RFC-1 R11): the
+  vendored schemas match their SHA256SUMS, VERSION names a kit tag and commit
+  that agree, SHA256SUMS equals the kit's at that commit, and the kit's
+  conformance runner passes against the tool's built binary. The caller checks
+  out its repository, builds the binary and prepares any fixture first.
+
+inputs:
+  binary:
+    description: Path to the built tool, relative to the workspace.
+    required: true
+  schemas-dir:
+    description: The directory holding the vendored `*.schema.json` files and `SHA256SUMS`.
+    required: true
+  version-file:
+    description: A one-line file, `<tag> <40-hex commit>`, naming the kit release vendored.
+    required: true
+  working-directory:
+    description: Where the runner runs, relative to the workspace.
+    required: false
+    default: .
+  require-run:
+    description: Fail a run in which no safe command got further than `not-run`.
+    required: false
+    default: "true"
+  timeout:
+    description: Seconds each command may take; the runner's default when empty.
+    required: false
+    default: ""
+  allow-prerelease:
+    description: Accept a tag with a pre-release suffix such as `-rc.4`.
+    required: false
+    default: "false"
+
+runs:
+  using: composite
+  steps:
+    - name: check the vendored schemas against the kit
+      shell: bash
+      env:
+        SCHEMAS: ${{ inputs.schemas-dir }}
+        VERSION_FILE: ${{ inputs.version-file }}
+        ALLOW_PRERELEASE: ${{ inputs.allow-prerelease }}
+        PIN: ${{ github.action_path }}/../../scripts/contract-pin.sh
+      run: '"$PIN" "$GITHUB_WORKSPACE/$SCHEMAS" "$GITHUB_WORKSPACE/$VERSION_FILE" "$RUNNER_TEMP/agent-cli-kit"'
+
+    - name: run the kit's conformance runner
+      shell: bash
+      env:
+        BINARY: ${{ inputs.binary }}
+        SCHEMAS: ${{ inputs.schemas-dir }}
+        WORKDIR: ${{ inputs.working-directory }}
+        REQUIRE_RUN: ${{ inputs.require-run }}
+        TIMEOUT: ${{ inputs.timeout }}
+      run: |
+        set -euo pipefail
+        args=("$GITHUB_WORKSPACE/$BINARY" --schemas "$GITHUB_WORKSPACE/$SCHEMAS")
+        [ "$REQUIRE_RUN" = "true" ] && args+=(--require-run)
+        [ -z "$TIMEOUT" ] || args+=(--timeout "$TIMEOUT")
+        cd "$GITHUB_WORKSPACE/$WORKDIR"
+        python3 -I "$RUNNER_TEMP/agent-cli-kit/scripts/conform.py" "${args[@]}"
