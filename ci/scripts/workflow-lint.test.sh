@@ -68,6 +68,9 @@ violates R5.pin r5-pin-tag.yml
 violates R5.pin r5-pin-comment.yml
 violates R5.pin r5-pin-docker.yml
 
+tpl="$here/../templates/default/.github/workflows/ci.yml"
+expect 0 "the default caller template is clean" --ci-workflow "$tpl" "$tpl"
+
 expect 2 "invalid YAML" --ci-workflow "$fx/invalid-yaml.yml" "$fx/invalid-yaml.yml"
 expect 2 "a top level that is not a mapping" --ci-workflow "$fx/not-a-mapping.yml" "$fx/not-a-mapping.yml"
 expect 2 "a missing ci workflow" --ci-workflow "$fx/absent.yml" "$fx/clean.yml"
