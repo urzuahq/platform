@@ -18,6 +18,9 @@ tools=(
 )
 actions=(ci/actions/install-knope ci/actions/install-nextest ci/actions/install-cargo-tools)
 
+# The lines of a file that are not comments, so a commented-out command never counts.
+live() { grep -v '^[[:space:]]*#' "$1"; }
+
 # Prints one line per problem found under $1 and returns 1 when there is one.
 verify() {
   local dir="$1" bad=0 entry tool action url checks f
@@ -26,7 +29,7 @@ verify() {
     if [ ! -f "$dir/$action" ]; then
       echo "missing $action"; bad=1; continue
     fi
-    [ "$(grep -c "$url" "$dir/$action")" -eq 1 ] \
+    [ "$(live "$dir/$action" | grep -o "$url" | wc -l)" -eq 1 ] \
       || { echo "$action must name the $tool download exactly once"; bad=1; }
     while IFS= read -r f; do
       [ "$f" = "$dir/$action" ] || [ "$f" = "$dir/ci/scripts/tool-pins.test.sh" ] && continue
@@ -37,7 +40,7 @@ verify() {
   for f in "${actions[@]}"; do
     [ -f "$dir/$f/action.yml" ] || continue
     checks=1; [ "$f" = ci/actions/install-cargo-tools ] && checks=2
-    [ "$(grep -c 'shasum -a 256 -c' "$dir/$f/action.yml")" -eq "$checks" ] \
+    [ "$(live "$dir/$f/action.yml" | grep -o 'shasum -a 256 -c' | wc -l)" -eq "$checks" ] \
       || { echo "$f/action.yml must run exactly $checks sha256 check(s)"; bad=1; }
   done
   return "$bad"
@@ -90,13 +93,21 @@ done
 for a in "${actions[@]}"; do
   name=${a##*/}
   twice=$tmp/twice-$name; plant "$twice"
-  url=$(grep -o 'github.com/[A-Za-z0-9_./-]*/releases/download' "$a/action.yml" | head -n 1)
+  url=$(grep -o 'github.com/[A-Za-z0-9_./-]*/releases/download' "$root/$a/action.yml" | head -n 1)
   printf '        curl -fsSL -o other.tgz "https://%s/v0.0.1/other.tgz"\n' "$url" >> "$twice/$a/action.yml"
   expect 1 "$name with a second download" "$twice"
 
   nosum=$tmp/nosum-$name; plant "$nosum"
   sed 's|shasum -a 256 -c|true|' "$nosum/$a/action.yml" > "$tmp/edit" && mv "$tmp/edit" "$nosum/$a/action.yml"
   expect 1 "$name missing its checksum check" "$nosum"
+
+  oneline=$tmp/oneline-$name; plant "$oneline"
+  sed "0,/curl -fsSL --retry/s||curl -fsSL -o same.tgz https://$url/v0.0.1/same.tgz; curl -fsSL --retry|" "$oneline/$a/action.yml" > "$tmp/edit" && mv "$tmp/edit" "$oneline/$a/action.yml"
+  expect 1 "$name with two downloads on one line" "$oneline"
+
+  commented=$tmp/commented-$name; plant "$commented"
+  sed 's|^\([[:space:]]*\)echo \(.*shasum -a 256 -c\)|\1# echo \2|' "$commented/$a/action.yml" > "$tmp/edit" && mv "$tmp/edit" "$commented/$a/action.yml"
+  expect 1 "$name with its checksum check commented out" "$commented"
 
   gone=$tmp/gone-$name; plant "$gone"; rm "$gone/$a/action.yml"
   expect 1 "$name action file deleted" "$gone"
