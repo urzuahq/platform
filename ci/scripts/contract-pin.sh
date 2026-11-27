@@ -17,11 +17,11 @@ kit_repo="${KIT_REPO:-https://github.com/urzuahq/agent-cli-kit.git}"
 [ -d "$schemas" ] || { echo "contract-pin: no schemas directory at $schemas" >&2; exit 2; }
 [ -f "$version_file" ] || { echo "contract-pin: no VERSION file at $version_file" >&2; exit 2; }
 
-if [ "$(wc -l < "$version_file")" -ne 1 ] || ! grep -Eq '^v[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)? [0-9a-f]{40}$' "$version_file"; then
+if [ "$(grep -c '' "$version_file")" -ne 1 ] || ! grep -Eq '^v[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)? [0-9a-f]{40}$' "$version_file"; then
   echo "contract-pin: $version_file must be one line, '<tag> <40-hex commit>', tag as v<major>.<minor>.<patch>[-pre-release]" >&2
   exit 2
 fi
-read -r tag commit < "$version_file"
+read -r tag commit < "$version_file" || [ -n "${commit:-}" ]
 
 failed=0
 fail() { echo "FAIL  $*" >&2; failed=1; }
@@ -37,7 +37,7 @@ refs="$(git ls-remote "$kit_repo" "refs/tags/$tag" "refs/tags/$tag^{}" 2>/dev/nu
 tag_commit="$(printf '%s\n' "$refs" | awk -v t="refs/tags/$tag" '$2 == t "^{}" { print $1; exit }')"
 [ -n "$tag_commit" ] || tag_commit="$(printf '%s\n' "$refs" | awk -v t="refs/tags/$tag" '$2 == t { print $1; exit }')"
 if [ -z "$tag_commit" ]; then
-  fail "tag $tag does not exist in $kit_repo"
+  fail "tag $tag was not found in $kit_repo (absent, or the repository could not be reached)"
 elif [ "$tag_commit" != "$commit" ]; then
   fail "tag $tag is commit $tag_commit, but VERSION says $commit"
 fi

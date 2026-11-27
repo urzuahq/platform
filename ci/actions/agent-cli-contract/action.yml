@@ -8,7 +8,7 @@ description: >-
 
 inputs:
   binary:
-    description: Path to the built tool, relative to the workspace.
+    description: Path to the built tool, absolute or relative to the workspace.
     required: true
   schemas-dir:
     description: The directory holding the vendored `*.schema.json` files and `SHA256SUMS`.
@@ -17,7 +17,7 @@ inputs:
     description: A one-line file, `<tag> <40-hex commit>`, naming the kit release vendored.
     required: true
   working-directory:
-    description: Where the runner runs, relative to the workspace.
+    description: Where the runner runs, absolute or relative to the workspace.
     required: false
     default: .
   require-run:
@@ -43,7 +43,10 @@ runs:
         VERSION_FILE: ${{ inputs.version-file }}
         ALLOW_PRERELEASE: ${{ inputs.allow-prerelease }}
         PIN: ${{ github.action_path }}/../../scripts/contract-pin.sh
-      run: '"$PIN" "$GITHUB_WORKSPACE/$SCHEMAS" "$GITHUB_WORKSPACE/$VERSION_FILE" "$RUNNER_TEMP/agent-cli-kit"'
+      run: |
+        set -euo pipefail
+        abs() { case "$1" in /*) printf '%s' "$1" ;; *) printf '%s/%s' "$GITHUB_WORKSPACE" "$1" ;; esac; }
+        "$PIN" "$(abs "$SCHEMAS")" "$(abs "$VERSION_FILE")" "$RUNNER_TEMP/agent-cli-kit"
 
     - name: run the kit's conformance runner
       shell: bash
@@ -55,8 +58,9 @@ runs:
         TIMEOUT: ${{ inputs.timeout }}
       run: |
         set -euo pipefail
-        args=("$GITHUB_WORKSPACE/$BINARY" --schemas "$GITHUB_WORKSPACE/$SCHEMAS")
+        abs() { case "$1" in /*) printf '%s' "$1" ;; *) printf '%s/%s' "$GITHUB_WORKSPACE" "$1" ;; esac; }
+        args=("$(abs "$BINARY")" --schemas "$(abs "$SCHEMAS")")
         [ "$REQUIRE_RUN" = "true" ] && args+=(--require-run)
         [ -z "$TIMEOUT" ] || args+=(--timeout "$TIMEOUT")
-        cd "$GITHUB_WORKSPACE/$WORKDIR"
+        cd "$(abs "$WORKDIR")"
         python3 -I "$RUNNER_TEMP/agent-cli-kit/scripts/conform.py" "${args[@]}"

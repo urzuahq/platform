@@ -60,17 +60,19 @@ edit_schema() { printf '{"a":2}\n' > schemas/a.schema.json; }
 unlist_schema() { grep -v ' b.schema.json' schemas/SHA256SUMS > sums && mv sums schemas/SHA256SUMS; }
 remove_schema() { rm schemas/b.schema.json; }
 own_sums() { printf '{"a":2}\n' > schemas/a.schema.json; (cd schemas && shasum -a 256 -- *.schema.json > SHA256SUMS); }
+no_newline() { printf '%s' "$(cat VERSION)" > VERSION; }
 rc_files() { git -C "$tmp/kit" archive "$c2" schemas | tar -x -C .; }
 
 v1="v1.1.0 $c1"
 expect 0 "a clean copy" "ok" "$v1" none
+expect 0 "a VERSION with no trailing newline" "ok" "$v1" no_newline
 expect 0 "a pre-release when allowed" "ok" "v1.2.0-rc.1 $c2" rc_files true
 expect 1 "an edited schema" "a.schema.json does not match" "$v1" edit_schema
 expect 1 "a schema missing from SHA256SUMS" "b.schema.json is not listed" "$v1" unlist_schema
 expect 1 "a listed schema that is absent" "lists b.schema.json" "$v1" remove_schema
 expect 1 "SHA256SUMS that differs from the kit's" "differs from the kit's" "$v1" own_sums
 expect 1 "a commit that is not the tag's" "tag v1.1.0 is commit $c1" "v1.1.0 $c2" none
-expect 1 "a tag that does not exist" "tag v9.9.9 does not exist" "v9.9.9 $c1" none
+expect 1 "a tag that does not exist" "tag v9.9.9 was not found" "v9.9.9 $c1" none
 expect 1 "a pre-release without the flag" "pre-release" "v1.2.0-rc.1 $c2" rc_files
 expect 2 "a malformed VERSION" "must be one line" "v1.1.0" none
 expect 2 "an uppercase commit" "must be one line" "v1.1.0 ${c1^^}" none
