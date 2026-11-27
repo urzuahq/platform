@@ -9,6 +9,7 @@ scripts-test:
 	ci/scripts/ci-gate.test.sh
 	ci/scripts/workflow-lint.test.sh
 	ci/scripts/pyyaml-pin.test.sh
+	ci/scripts/tool-pins.test.sh
 
 shellcheck:
 	shellcheck ci/scripts/*.sh

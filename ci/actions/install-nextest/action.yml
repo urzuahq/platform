@@ -1,0 +1,31 @@
+name: install nextest
+description: >-
+  Installs the pinned cargo-nextest release for the runner's OS and
+  architecture, verified against its SHA-256, and puts it on PATH. The one
+  place the nextest version and checksums are written: every workflow that needs nextest uses
+  this action, and ci/scripts/tool-pins.test.sh fails when a workflow
+  carries its own copy of the pin. An upgrade is a change to this file alone.
+
+runs:
+  using: composite
+  steps:
+    - name: install cargo-nextest 0.9.151 (pinned, checksummed)
+      shell: bash
+      run: |
+        set -euo pipefail
+        version=0.9.151
+        case "$RUNNER_OS-$RUNNER_ARCH" in
+          Linux-X64)
+            asset=cargo-nextest-$version-x86_64-unknown-linux-musl.tar.gz
+            sha256=6b284d6fde9670dfb6ee10ea9d9abbc85f95643d3f592472d420d82e257b3a6c ;;
+          macOS-ARM64)
+            asset=cargo-nextest-$version-universal-apple-darwin.tar.gz
+            sha256=d1d7d025d4bfc9fb154cd76aea3949bd78534829a0589abefa6e5dd4edb135dd ;;
+          *) echo "install-nextest: no pinned build for $RUNNER_OS-$RUNNER_ARCH" >&2; exit 1 ;;
+        esac
+        mkdir -p "$RUNNER_TEMP/nextest" && cd "$RUNNER_TEMP/nextest"
+        curl -fsSL --retry 5 --retry-all-errors --retry-delay 5 -o nextest.tgz "https://github.com/nextest-rs/nextest/releases/download/cargo-nextest-$version/$asset"
+        echo "$sha256  nextest.tgz" | shasum -a 256 -c -
+        tar -xzf nextest.tgz
+        echo "$PWD" >> "$GITHUB_PATH"
+        "$PWD/cargo-nextest" nextest --version
