@@ -10,6 +10,7 @@ scripts-test:
 	ci/scripts/workflow-lint.test.sh
 	ci/scripts/pyyaml-pin.test.sh
 	ci/scripts/tool-pins.test.sh
+	ci/scripts/contract-pin.test.sh
 
 shellcheck:
 	shellcheck ci/scripts/*.sh
