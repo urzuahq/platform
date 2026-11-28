@@ -61,6 +61,7 @@ unlist_schema() { grep -v ' b.schema.json' schemas/SHA256SUMS > sums && mv sums 
 remove_schema() { rm schemas/b.schema.json; }
 own_sums() { printf '{"a":2}\n' > schemas/a.schema.json; (cd schemas && shasum -a 256 -- *.schema.json > SHA256SUMS); }
 no_newline() { printf '%s' "$(cat VERSION)" > VERSION; }
+stale_kit() { mkdir -p kit && printf 'edited\n' > kit/conform.py; }
 rc_files() { git -C "$tmp/kit" archive "$c2" schemas | tar -x -C .; }
 
 v1="v1.1.0 $c1"
@@ -74,6 +75,7 @@ expect 1 "SHA256SUMS that differs from the kit's" "differs from the kit's" "$v1"
 expect 1 "a commit that is not the tag's" "tag v1.1.0 is commit $c1" "v1.1.0 $c2" none
 expect 1 "a tag that does not exist" "tag v9.9.9 was not found" "v9.9.9 $c1" none
 expect 1 "a pre-release without the flag" "pre-release" "v1.2.0-rc.1 $c2" rc_files
+expect 2 "a kit directory already holding files" "must be absent or empty" "$v1" stale_kit
 expect 2 "a malformed VERSION" "must be one line" "v1.1.0" none
 expect 2 "an uppercase commit" "must be one line" "v1.1.0 ${c1^^}" none
 expect 2 "a tag without v" "must be one line" "1.1.0 $c1" none

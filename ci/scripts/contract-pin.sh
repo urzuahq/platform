@@ -16,6 +16,11 @@ kit_repo="${KIT_REPO:-https://github.com/urzuahq/agent-cli-kit.git}"
 
 [ -d "$schemas" ] || { echo "contract-pin: no schemas directory at $schemas" >&2; exit 2; }
 [ -f "$version_file" ] || { echo "contract-pin: no VERSION file at $version_file" >&2; exit 2; }
+# A reused checkout could carry edits that a checkout of the commit keeps.
+if [ -e "$kit_dir" ] && [ -n "$(ls -A "$kit_dir" 2>/dev/null)" ]; then
+  echo "contract-pin: $kit_dir must be absent or empty" >&2
+  exit 2
+fi
 
 if [ "$(grep -c '' "$version_file")" -ne 1 ] || ! grep -Eq '^v[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)? [0-9a-f]{40}$' "$version_file"; then
   echo "contract-pin: $version_file must be one line, '<tag> <40-hex commit>', tag as v<major>.<minor>.<patch>[-pre-release]" >&2
