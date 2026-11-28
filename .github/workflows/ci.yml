@@ -67,10 +67,18 @@ jobs:
         with:
           fetch-depth: 0
           persist-credentials: false
+      # A merge-queue event carries no github.base_ref; without its own base
+      # the gate skips the diff rules, drift included, for the queued commit.
+      - name: resolve the base branch for the diff rules
+        id: base
+        env:
+          PR_BASE: ${{ github.base_ref }}
+          QUEUE_BASE: ${{ github.event.merge_group.base_ref }}
+        run: echo "ref=${PR_BASE:-${QUEUE_BASE#refs/heads/}}" >> "$GITHUB_OUTPUT"
       - uses: urzuahq/urzua/.github/actions/urzua-gate@c72d0082896e602699f0b4e2ade3c78e1e039551 # v0.4.15
         with:
           version: v0.4.15
-          base-ref: ${{ github.base_ref }}
+          base-ref: ${{ steps.base.outputs.ref }}
 
   installers:
     name: installers (${{ matrix.os }})

@@ -25,6 +25,30 @@ jobs:
           persist-credentials: false
       - run: make ci
 
+  records:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      # A merge-queue event carries no github.base_ref; without its own base
+      # the gate skips the diff rules, drift included, for the queued commit.
+      - name: resolve the base branch for the diff rules
+        id: base
+        env:
+          PR_BASE: ${{ github.base_ref }}
+          QUEUE_BASE: ${{ github.event.merge_group.base_ref }}
+        run: echo "ref=${PR_BASE:-${QUEUE_BASE#refs/heads/}}" >> "$GITHUB_OUTPUT"
+      - uses: urzuahq/urzua/.github/actions/urzua-gate@c72d0082896e602699f0b4e2ade3c78e1e039551 # v0.4.15
+        with:
+          version: v0.4.15
+          base-ref: ${{ steps.base.outputs.ref }}
+
   workflow-lint:
     runs-on: ubuntu-latest
     timeout-minutes: 5
@@ -37,7 +61,7 @@ jobs:
   # The one required check: fails on any failed, cancelled or skipped job.
   ci:
     name: ci
-    needs: [checks, workflow-lint]
+    needs: [checks, records, workflow-lint]
     if: always()
     runs-on: ubuntu-latest
     timeout-minutes: 2
